@@ -1,112 +1,93 @@
-import React,{useState} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as Sharing from 'expo-sharing';
 
-export default function App() {
+// This is a template project sent to students
+import React, { Component } from "react";
 
-  const [selectedImage, setSelectedImage] = React.useState(null)
+import { StyleSheet, Text, View, TextInput, Image} from "react-native";
 
-  let openImagePickerAsync = async () => {
-    let permissionResult = await ImagePicker.requestCameraRollPermissionsAsync();
+import Forecast from "./Forecast";
+import OpenWeatherMap from "./open_weather_map"
 
-    if (permissionResult.granted === false){
-
-      alert("Permission is required!");
-      return;
-    }
-
-    let pickerResult = await ImagePicker.launchImageLibraryAsync();
+class WeatherForecast extends Component {
   
-    if (pickerResult.cancelled == true){
-      return;
-    }
+  constructor (props){
+    super(props);
+    this.state = {
+      zip: "", forecast: null
+    };
+  }
 
-    setSelectedImage({localUri: pickerResult.uri});
-  };
-
-  let openSharingDialogAsync = async () => {
-    if ( !(await Sharing.isAvailableAsync())){
-      alert('Sharing is not available on my phone');
-      return;
-
-    }
+  handleTextChange = event => {
+    let zip = event.nativeEvent.text;
+    OpenWeatherMap.fetchForecast(zip).then(forecast => {
+      this.setState({forecast: forecast})
+    });
+  }
+  render() {
      
-    Sharing.shareAsync(selectedImage.localUri);
-  }
-
-  //display selected image
-
-  if  (selectedImage !== null){
-    return(
+    let content = null;
+    if (this.state.forecast !== null){
+      content = (
+        <Forecast  
+        main={this.state.forecast.main}
+        description={this.state.forecast.description}
+        temp={this.state.forecast.temp}
+        />
+      );
+    }
+    return (
       <View style={styles.container}>
-        <Image source= {{uri: selectedImage.localUri}} style={styles.selImage}/>
-
-        <TouchableOpacity onPress={openSharingDialogAsync} style={styles.button}>
-          <Text style={styles.buttonText}>
-            Share my phote.
-          </Text>
-
-        </TouchableOpacity>
+        <Image
+          source={require("./assets/sky.jpg")}
+          resizeMode="cover"
+          style={styles.backdrop}
+        />
+          <View style={styles.overlay}>
+            <View style={styles.row}>
+              <Text style={styles.mainText}>
+                Current Weather For:
+              </Text>
+              <View style={styles.zipContainer}>
+                <TextInput
+                  style={[styles.zipCode, styles.mainText]}
+                  onSubmitEditing={this.handleTextChange}
+                  //underlineColorAndroid="transparent"
+                />
+              </View>
+            </View>
+                   {content}
+          </View>
+        
       </View>
-    )
+    );
   }
- //end of the code
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.counterText}>
-       <Image source={{uri: 'https://raw.githubusercontent.com/AbdunabiRamadan/CIS340/master/images/rams.png'}}
-       style={styles.logo}/>
-        <Text style={styles.instructions}>
-          Press the Button below to select an image on your phone.   
-        </Text>
-     </View> 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={openImagePickerAsync}
-        >
-          <Text style={styles.buttonText}> Pick Image</Text>
-      </TouchableOpacity>
-    </View>
-  );
 }
 
+const baseFontSize = 16;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    backgroundColor: "aqua",
+  container: { flex: 1, alignItems: "center", paddingTop: 30, backgroundColor: "#000000", },
+  backdrop: { flex: 1, flexDirection: "column" },
+  overlay: {
+    paddingTop: 5,
+     opacity: 0.5,
+    flexDirection: "column",
+    alignItems: "center"
   },
-
-  button: {
-    borderRadius: 5,
-    backgroundColor: "darkmagenta",
-    padding: 20,
+  row: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "flex-start",
+    padding: 30
   },
-
-  instructions: {
-    fontSize: 18,
-    color: "limegreen",
-    marginHorizontal: 15,
-    marginBottom: 10,
+  zipContainer: {
+    height: baseFontSize + 10,
+    borderBottomColor: "#FFFAF0",
+    borderBottomWidth: 3,
+    marginLeft: 18,
+   
   },
-
-  logo: {
-    width: 350,
-    height: 200,
-    marginBottom: 20,
-  },
-
-  buttonText: {
-    fontSize: 20,
-    color: "lightpink"
-  },
-
-  selImage: {
-    width: 300,
-    height: 300,
-    resizeMode: 'contain'
-  }
+  zipCode: { flex: 1, width: 60, height: baseFontSize },
+  mainText: { fontSize: baseFontSize , color: "#FFFAF0" }
 });
+
+export default WeatherForecast;
